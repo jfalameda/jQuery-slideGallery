@@ -206,15 +206,13 @@
 
         onMenuLinkClicked: function (element, event, manualPosition) {
 
-            var position = parseInt(element.attr("name"), 10);
-
-            this.movingToSlide = position;
-
-            var cycle = this.listTransformation(position);
-
+            var position       = parseInt(element.attr("name"), 10); // The position of the slide to move to
+            this.movingToSlide = position; // Storing this on a class attribute
+            var cycle          = this.listTransformation(position); // The cycle flag that indicates to imitate a cycling transition
+            this.currentSlide  = position; // Storing the position
+            // Calling the callbacks before the transition is performed
             this.callCallbacksFunctions(cycle);
-
-            this.currentSlide = position;
+            
             if (!position)
                 position = 0;
 
@@ -255,32 +253,59 @@
             this.preventTransition = false;
         },
 
+        /**
+        * Moves the gallery to the next slide. This is made by calculating
+        * the slide offset on the list container and giving the wrapper a
+        * negative margin.
+        * @param position {Integer} The slide to move to position
+        * @param cycle {Boolean} Indicates if the next transition will imitate
+        *                        the cycling effect.
+        */
         nextSlide: function (position, cycle) {
             var $this = this;
+            // Finding the wrapper element and animate it to the new
+            // position.
             this.galleryContainer.find(".wrapper").animate({
-                marginLeft: this.getPosition(position)
+                marginLeft: this.getPosition(position) // Getting the new position based on the slide position
             }, this.OPTIONS.transitionTime, function () {
+                // Once the transition is finished the callback funcitons
+                // will be called
                 $this.callOnCompletedCallbacksFunctions();
-                if (cycle) {
+                // In case the cycling effecft was performed some
+                // actions need to be perform in order to restore
+                // the gallery on its original sort order.
+                if (cycle && $this.cycle) {
                     $this.postCyclingActions();
                 }
             });
         },
 
+        /**
+        * Calls the defined callback functions set on the options object
+        * when the plugin was initialized.
+        * @param cycle {Boolean} Indicates the transition imitates the cycling
+        *                        effect.
+        */
         callCallbacksFunctions: function (cycle) {
             if (this.customOptions.onSlideCallback) {
                 this.customOptions.onSlideCallback(this, cycle);
             }
         },
 
+        /**
+        * Calls the defined callback functions set on the options object
+        * when the plugin was initialized.¨s
+        */
         callOnCompletedCallbacksFunctions: function () {
+            // Calling the on completed callback
             if (this.customOptions.onSlideCallbackCompleted) {
                 this.customOptions.onSlideCallbackCompleted(this);
             }
         },
 
         /**
-        * Gets the slide margin to move to
+        * Gets the slide margin to move to.
+        * @param position {Integer} The slide position on the list.
         */
         getPosition: function (position) {
             return "-" + (position * this.galleryContainer.outerWidth()) + "px";
@@ -305,18 +330,14 @@
         * that will make the effect of sliding by modifying the margin.
         */
         calculateWrapperWidth: function () {
-
             if (this.handles.size() == 1)
                 this.controls.hide();
 
             var totalWidth = 0;
-
             this.calculateSlidesWidth();
-
             this.slides.each(function (key, children) {
                 totalWidth += $(children).outerWidth();
             });
-
 
             this.wrapper.css("width", (totalWidth + 100) + "px");
         },
