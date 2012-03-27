@@ -209,9 +209,11 @@
             var position       = parseInt(element.attr("name"), 10); // The position of the slide to move to
             this.movingToSlide = position; // Storing this on a class attribute
             var cycle          = this.listTransformation(position); // The cycle flag that indicates to imitate a cycling transition
-            this.currentSlide  = position; // Storing the position
+
             // Calling the callbacks before the transition is performed
             this.callCallbacksFunctions(cycle);
+
+            this.currentSlide  = position; // Storing the position
             
             if (!position)
                 position = 0;
