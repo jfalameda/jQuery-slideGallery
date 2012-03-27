@@ -208,7 +208,7 @@
 
             var position       = parseInt(element.attr("name"), 10); // The position of the slide to move to
             this.movingToSlide = position; // Storing this on a class attribute
-            var cycle          = this.listTransformation(position); // The cycle flag that indicates to imitate a cycling transition
+            var cycle          = this.listTransformation(position, event); // The cycle flag that indicates to imitate a cycling transition
 
             // Calling the callbacks before the transition is performed
             this.callCallbacksFunctions(cycle);
@@ -235,8 +235,8 @@
 
         },
 
-        listTransformation: function (position) {
-            if (this.cycle) {
+        listTransformation: function (position, event) {
+            if (this.cycle && !event) {
                 if (position === 0 && this.currentSlide == this.slides.length - 1) {
                     var last = this.galleryContainer.find(".wrapper li:last").remove();
                     this.galleryContainer.find(".wrapper").prepend(last);
