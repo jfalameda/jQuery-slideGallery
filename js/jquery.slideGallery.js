@@ -2,7 +2,7 @@
 * Slide gallery
 * @Author José Fernández Alameda
 * @Email jose.fa@cloudnine.se
-* @version 0.1.5
+* @version 0.1.6
 */
 
 (function ($, window) {
@@ -74,6 +74,9 @@
             this.customOptions = options;
             this.galleryContainer = gallery;
             this.parseOptions();
+            if(options.cycle !== undefined) {
+				this.cycle = options.cycle;
+            }
 
 
             if (!this.customOptions.controls) {
@@ -125,7 +128,7 @@
         */
         setInterval: function () {
             var $this = this;
-            this.interval = setInterval(function () {
+            this.interval = window.setInterval(function () {
                 var next = $this.currentSelected.next();
                 if (next.length === 0) {
                     next = $this.galleryContainer.find(".wrapper li:first");
@@ -170,7 +173,7 @@
 
         onSlideControlClicked: function (element, data) {
             if (parseInt(element.attr("name"), 10) != this.currentSlide) {
-                clearInterval(this.interval);
+                window.clearInterval(this.interval);
                 data.preventDefault();
                 if (!this.preventTransition) {
                     this.onMenuLinkClicked(element, data, null);
@@ -200,6 +203,24 @@
                 marginLeft: "-" + (selected * this.galleryContainer.width()) + "px"
             });
 
+        },
+        
+        next: function() {
+			var next = this.currentSelected.next();
+            if (next.length === 0) {
+                next = this.galleryContainer.find(".wrapper li:first");
+            }
+            this.markControlSelected(next.attr("name"));
+            this.onMenuLinkClicked(next, null, null);
+        },
+        
+        prev: function() {
+			var next = this.currentSelected.prev();
+            if (next.length === 0) {
+                next = this.galleryContainer.find(".wrapper li:last");
+            }
+            this.markControlSelected(next.attr("name"));
+            this.onMenuLinkClicked(next, null, null);
         },
 
         // OBSERVER CALLBACKS

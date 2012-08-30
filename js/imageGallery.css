@@ -1,0 +1,13 @@
+/** Stylling the image gallery **/
+.slide-gallery                                { overflow: hidden; color: White; margin-top: 0em; position: relative; margin-bottom: 25px; }
+.slide-gallery .wrapper                       { margin: 0px; padding: 0px; list-style: none; }
+.slide-gallery .wrapper li                    { float: left; margin: 0px; padding: 0px; list-style: none; overflow: hidden; position: relative; } 
+.slide-gallery .wrapper li .splash            { position: absolute; right: 10px; top: 0px; margin-right: -250px; }
+.slide-gallery .controls                      { margin-top: 10px; width: auto; text-align: center; }
+.slide-gallery .controls li                   { display: inline; margin: 0px; padding: 0px; }
+.slide-gallery .controls li a                 { padding: 0px; background: transparent url("/UI/images/sprite.png") -20px -0px; display: inline-block; width: 15px; height: 15px; margin-left: 0.5em; cursor: pointer; text-indent: -2000px; overflow: hidden; border: 0px !important; } 
+.slide-gallery .controls li.selected a        { display: block; background: transparent url("/UI/images/sprite.png") -0px -0px; }
+.slide-gallery .wrapper li a { display: block; width: 100%; }
+.slide-gallery .wrapper li a,
+.slide-gallery .wrapper li a:hover,
+.slide-gallery .wrapper li a:active           { border: 0px !important; padding: 0px !important; }
