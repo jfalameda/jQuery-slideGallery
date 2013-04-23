@@ -1,8 +1,9 @@
+/*! jquery.slideGallery.js */
 /**
 * Slide gallery
 * @Author José Fernández Alameda
 * @Email jose.fa@cloudnine.se
-* @version 0.1.6
+* @version 0.1.7
 */
 
 (function ($, window) {
@@ -55,6 +56,16 @@
         cycle: true,
 
         /**
+        * Stores the cloned UL list
+        */
+        clonedList: null,
+
+        /**
+        * Determines if the slide gallery is paused.
+        */
+        paused: false,
+
+        /**
         * Slide gallery options
         */
 
@@ -71,24 +82,9 @@
         */
         init: function (gallery, options) {
 
-            this.customOptions = options;
             this.galleryContainer = gallery;
-            this.parseOptions();
-            if(options.cycle !== undefined) {
-				this.cycle = options.cycle;
-            }
-
-
-            if (!this.customOptions.controls) {
-                this.createControls();
-            } else {
-                this.controls = this.customOptions.controls;
-                this.handles = this.controls.find("li");
-            }
-
-            this.storeDom();
-
-            this.calculateWrapperWidth();
+            this.processingOptions(options);
+            this.initializeElements();
 
             // Listening to the DOM elements
             this.addObservers();
@@ -99,6 +95,49 @@
 
             $("html").trigger("slide-gallery:ready");
 
+        },
+
+        /**
+        * Processes the initialization options
+        * @param options The options object
+        */
+        processingOptions: function(options) {
+            if(!options) {
+                options = {};
+            }
+            this.customOptions = options;
+            this.parseOptions();
+            this.parseDataAttributes();
+            if(options.cycle !== undefined) {
+                this.cycle = options.cycle;
+            }
+        },
+
+        /**
+        * Prepares the HMTL elements
+        */
+        initializeElements: function() {
+            if (!this.customOptions.controls) {
+                this.createControls();
+            } else {
+                this.controls = this.customOptions.controls;
+                this.handles = this.controls.find("li");
+            }
+            this.storeDom();
+            this.calculateWrapperWidth();
+        },
+
+        /**
+        * Parse the options passed through data attributes
+        * from the slideGallery element.
+        */
+        parseDataAttributes: function() {
+            if(this.galleryContainer.attr("data-autoplay") == "false") {
+                this.customOptions.autoplay = false;
+            }
+            if(this.galleryContainer.attr("data-transition-timeout")) {
+                this.OPTIONS.slideTimeout = parseInt(this.galleryContainer.attr("data-transition-timeout"), 10);
+            }
         },
 
         /**
@@ -114,7 +153,11 @@
         * Stores the references to the DOM elements
         */
         storeDom: function () {
-            this.slides = this.galleryContainer.find(".wrapper").children();
+            var ul = this.galleryContainer.find(".wrapper").detach();
+            this.galleryContainer.append('<div class="wrapper"></div>');
+            ul.removeClass("wrapper");
+            this.galleryContainer.find(".wrapper").append(ul);
+            this.slides = ul.find("li");
             this.wrapper = this.galleryContainer.find(".wrapper");
             if (!this.controls) {
                 this.controls = this.galleryContainer.find(".controls");
@@ -129,12 +172,7 @@
         setInterval: function () {
             var $this = this;
             this.interval = window.setInterval(function () {
-                var next = $this.currentSelected.next();
-                if (next.length === 0) {
-                    next = $this.galleryContainer.find(".wrapper li:first");
-                }
-                $this.markControlSelected(next.attr("name"));
-                $this.onMenuLinkClicked(next, null, null);
+                $this.next();
             }, this.OPTIONS.slideTimeout);
         },
 
@@ -169,8 +207,35 @@
                 _this.resizeActions(false);
 
             });
-        },
 
+            if(!this.customOptions.preventControls) {
+
+                // When clicking on the next element it will move to the next
+                // slide.
+                this.galleryContainer.find(".next").click(function() {
+                  _this.next();
+                });
+
+                // When clicking on the prev element it will move to the prev
+                // slide.
+                this.galleryContainer.find(".prev").click(function() {
+                  _this.prev();
+                });
+            }
+
+            $(this.galleryContainer.find("*")).on('slideGallery:pause', function() {
+                _this.pause();
+            });
+
+        },         
+
+        /**
+        * This function is triggered when a click over a slide gallery
+        * control element is clicked. It will perform the movement to
+        * the corresponding slide.
+        * @param element The clicked element
+        * @param data The attached data.
+        */
         onSlideControlClicked: function (element, data) {
             if (parseInt(element.attr("name"), 10) != this.currentSlide) {
                 window.clearInterval(this.interval);
@@ -180,6 +245,8 @@
                 } else {
                     this.preventTransition = false;
                 }
+                // Setting the automatic play of the slide
+                // in case the option is setted.
                 if (this.customOptions.autoplay !== false) {
                     this.setInterval();
                 }
@@ -205,75 +272,136 @@
 
         },
         
+        /**
+        * Moves to the next slide
+        */
         next: function() {
-			var next = this.currentSelected.next();
-            if (next.length === 0) {
-                next = this.galleryContainer.find(".wrapper li:first");
+            if(!this.preventTransition) {
+                this.galleryContainer.trigger("slideGallery:onSlideNext");
+                this.preventTransition = true;
+                var next = this.currentSelected.next();
+                if (next.length === 0) {
+                  next = this.galleryContainer.find(".wrapper li:first");
+                }
+                this.markControlSelected(next.attr("name"));
+                this.onMenuLinkClicked(next, null, null, true);
             }
-            this.markControlSelected(next.attr("name"));
-            this.onMenuLinkClicked(next, null, null);
         },
         
+        /**
+        * Moves to the previous slide
+        */
         prev: function() {
-			var next = this.currentSelected.prev();
-            if (next.length === 0) {
-                next = this.galleryContainer.find(".wrapper li:last");
+            if(!this.preventTransition) {
+                this.galleryContainer.trigger("slideGallery:onSlidePrevious");
+                this.preventTransition = true;
+                var next = this.currentSelected.prev();
+                if (next.length === 0) {
+                    next = this.galleryContainer.find(".wrapper li:last");
+                }
+                this.markControlSelected(next.attr("name"));
+                this.onMenuLinkClicked(next, null, null, false);
             }
-            this.markControlSelected(next.attr("name"));
-            this.onMenuLinkClicked(next, null, null);
+        },
+
+        pause: function(argument) {
+            window.clearInterval(this.interval);
+            this.paused = true;
+        },
+
+        play: function() {
+            this.setInterval();
+            this.paused = false;
         },
 
         // OBSERVER CALLBACKS
 
-        onMenuLinkClicked: function (element, event, manualPosition) {
-
+        /**
+        * This function takes care of performing the slide movement.
+        * It also takes cares of moving the elments to the end or the
+        * start of the list in order to create the cycling effect.
+        * @param element The element on the list we are gonna move to
+        * @param event The click event information.
+        * @param manualPosition Force to move to a slide based on
+        *       an integer value.
+        */
+        onMenuLinkClicked: function (element, event, manualPosition, next) {
             var position       = parseInt(element.attr("name"), 10); // The position of the slide to move to
             this.movingToSlide = position; // Storing this on a class attribute
-            var cycle          = this.listTransformation(position, event); // The cycle flag that indicates to imitate a cycling transition
+
+            // Triggering the event that indicates which is the next
+            // slide gallery it would transition to.
+            this.galleryContainer.trigger("slideGallery:nextGallery", this.slides[position]);
+
+            var cycle          = this.listTransformation(position, event, next);
 
             // Calling the callbacks before the transition is performed
             this.callCallbacksFunctions(cycle);
 
+            // In case a transformation is needed we intertupt the flow
+            if(cycle) { return; }
             this.currentSlide  = position; // Storing the position
             
-            if (!position)
-                position = 0;
+            position = position || 0;
 
             var originalPosition = position;
+            
 
-            if (cycle)
-                position = 1;
-
-            if (manualPosition)
-                position = manualPosition;
-
-            this.nextSlide(position, cycle);
-
+            position = manualPosition || position;
+            // Moving to the next slide
+            this.nextSlide(position, cycle, next);
+            // Storing the currently selected slide
             this.currentSelected = element;
             this.currentSlideElement = this.slides[originalPosition];
-
             this.markControlSelected(originalPosition);
-
         },
-
-        listTransformation: function (position, event) {
+        /**
+        * Takes care of creating the loop efect on the slide gallery
+        * @position The position to move to
+        * @event The click event
+        */
+        listTransformation: function (position, event, next) {
             if (this.cycle && !event) {
-                if (position === 0 && this.currentSlide == this.slides.length - 1) {
-                    var last = this.galleryContainer.find(".wrapper li:last").remove();
-                    this.galleryContainer.find(".wrapper").prepend(last);
-                    this.goToSlide(0);
+                if (position === 0 && this.currentSlide == this.slides.length - 1 && next) {
+                    this.clonedList = this.galleryContainer.find(".wrapper ul").clone();
+                    this.galleryContainer.find(".wrapper").prepend(this.clonedList);
+                    this.nextSlide(this.slides.length, true, next);
+                    return true;
+                } else if ( position === this.slides.length - 1 && this.currentSlide === 0 && !next) {
+                    this.clonedList = this.galleryContainer.find(".wrapper ul").clone();
+                    this.galleryContainer.find(".wrapper").append(this.clonedList);
+                    this.goToSlide(this.slides.length);
+                    this.nextSlide(this.slides.length-1, true, next);
                     return true;
                 }
             }
             return false;
         },
 
-        postCyclingActions: function () {
-            var first = this.galleryContainer.find(".wrapper li:first").remove();
-            this.galleryContainer.find(".wrapper").append(first);
-            this.goToSlide(0);
-            this.currentSlide = 0;
-            this.preventTransition = false;
+        /**
+        * This function is called once the transition has been made.
+        * It would move the elements that were moved in order to
+        * create the cycling effect to its originals positions.
+        * @param cycke The position the moved element is.
+        */
+        postCyclingActions: function (cycle, next) {
+            if(next) {
+                this.goToSlide(0);
+                this.setCurrent(0);
+            } else {
+                this.goToSlide(this.slides.length-1);
+                this.setCurrent(this.slides.length-1);
+            }
+            this.clonedList.remove();
+        },
+
+        /**
+        * Sets the current element on the variables
+        */
+        setCurrent: function(position) {
+            this.currentSlide = position;
+            this.currentSelected = $(this.slides[position]);
+            this.currentSlideElement = $(this.slides[position]);
         },
 
         /**
@@ -284,21 +412,25 @@
         * @param cycle {Boolean} Indicates if the next transition will imitate
         *                        the cycling effect.
         */
-        nextSlide: function (position, cycle) {
+        nextSlide: function (position, cycle, next) {
             var $this = this;
             // Finding the wrapper element and animate it to the new
             // position.
             this.galleryContainer.find(".wrapper").animate({
                 marginLeft: this.getPosition(position) // Getting the new position based on the slide position
             }, this.OPTIONS.transitionTime, function () {
+                // Setting the prevent transition attribute to
+                // False. It prevents the user to move to another slide
+                // while one is already being made.
+                $this.preventTransition = false;
                 // Once the transition is finished the callback funcitons
                 // will be called
                 $this.callOnCompletedCallbacksFunctions();
                 // In case the cycling effecft was performed some
                 // actions need to be perform in order to restore
                 // the gallery on its original sort order.
-                if (cycle && $this.cycle) {
-                    $this.postCyclingActions();
+                if (cycle !== false && $this.cycle) {
+                    $this.postCyclingActions(cycle, next);
                 }
             });
         },
@@ -339,7 +471,6 @@
         * @param position {Integer} The slide to move to
         */
         goToSlide: function (position) {
-            this.preventTransition = true;
             this.galleryContainer.find(".wrapper").css("margin-left", this.getPosition(position));
             this.currentSlideElement = this.slides[position];
         },
@@ -362,7 +493,7 @@
                 totalWidth += $(children).outerWidth();
             });
 
-            this.wrapper.css("width", (totalWidth + 100) + "px");
+            this.wrapper.css("width", (totalWidth + 100)*2 + "px");
         },
 
         calculateSlidesWidth: function () {
@@ -391,5 +522,6 @@
         return new SlideGallery($(this), options);
     };
 
+    window.SPL.SlideGallery = SlideGallery;
 
 })(jQuery, window);
