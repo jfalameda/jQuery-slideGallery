@@ -522,6 +522,4 @@
         return new SlideGallery($(this), options);
     };
 
-    window.SPL.SlideGallery = SlideGallery;
-
 })(jQuery, window);
